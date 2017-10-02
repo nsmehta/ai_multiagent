@@ -235,35 +235,53 @@ class MinimaxAgent(MultiAgentSearchAgent):
     def utility(self, sucessorState):
         return self.evaluationFunction(sucessorState)
 
-    def terminalTest(self, sucessorState, gameState):
-        if self.depth < 0:
+    def terminalTest(self, sucessorState, gameState, depth):
+        # if self.depth < 0:
+        if depth <= 0 or sucessorState.isWin() or sucessorState.isLose():
             return True
         return False
         # return gameState.getNumFood() <= 0
         # return self.calculateFoodPalletsLeft(gameState) <= 0
 
-    def maxValue(self, sucessorState, gameState):
-        self.depth -= 1
-        if self.terminalTest(sucessorState, gameState):
+    def maxValue(self, sucessorState, gameState, depth):
+        self.depth = depth
+        # self.depth -= 1
+        if self.terminalTest(sucessorState, gameState, depth):
             return self.utility(sucessorState)
+        # print "self.depth", self.depth
         value = -sys.maxint - 1
         legalMoves = gameState.getLegalActions(0)
         states = [gameState.generateSuccessor(0, action) for action in legalMoves]
         for state in states:
-            value = max(value, self.minValue(state, gameState))
+            value = max(value, self.minValue(state, gameState, depth, 1))
 
         return value
 
-    def minValue(self, sucessorState, gameState):
-        if self.terminalTest(sucessorState, gameState):
+    def minValue(self, sucessorState, gameState, depth, ghostNumber):
+        self.depth = depth
+        # print "gameState= ", type(gameState)
+        # print "depth", depth
+        if self.terminalTest(sucessorState, gameState, depth):
+            # print "in terminal state,", self.utility(sucessorState)
             return self.utility(sucessorState)
         value = sys.maxint
         states = list()
-        for i in range(1, gameState.getNumAgents()):
+        # for each ghost
+        for i in range(ghostNumber, gameState.getNumAgents()):
             legalMoves = gameState.getLegalActions(i)
-            states += [gameState.generateSuccessor(i, action) for action in legalMoves]
-        for state in states:
-            value = min(value, self.maxValue(state, gameState))
+            # print "legalMoves", legalMoves
+            states = [gameState.generateSuccessor(i, action) for action in legalMoves]
+            # print "gameState.getNumAgents()", i
+            # if ghost number is not final ghost
+            if(i < gameState.getNumAgents() - 1):
+                # print "i", i
+                for state in states:
+                    value = min(value, self.minValue(state, gameState, depth, i + 1))
+            else:
+                for state in states:
+                    value = min(value, self.maxValue(state, gameState, depth - 1))
+        # for state in states:
+        #     value = min(value, self.maxValue(state, gameState, depth - 1))
 
         return value
 
@@ -290,14 +308,18 @@ class MinimaxAgent(MultiAgentSearchAgent):
         # print 'legalActions2 = ', gameState.getLegalActions(2)
         # print 'legalActions3 = ', gameState.getLegalActions(3)
         # print 'gameState = ', gameState.generateSuccessor(0, 'West')
+        # print "gameState= ", type(gameState)
         # print 'self.depth = ', self.depth
         # print 'getNumFood = ', gameState.getNumFood()
         # print 'self.evaluationFunction = ', self.evaluationFunction
         legalMoves = gameState.getLegalActions(0)
-        scores = [self.minValue(gameState.generateSuccessor(0, action), gameState) for action in legalMoves]
+        # print "legalMoves", legalMoves
+        # self.depth -= 1
+        scores = [self.minValue(gameState.generateSuccessor(0, action), gameState, self.depth, 1) for action in legalMoves]
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+        # print legalMoves[chosenIndex]
         return legalMoves[chosenIndex]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
