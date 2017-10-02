@@ -228,6 +228,45 @@ class MinimaxAgent(MultiAgentSearchAgent):
       Your minimax agent (question 2)
     """
 
+    def calculateFoodPalletsLeft(self, gameState):
+        return gameState.getNumFood()
+        # return 0
+
+    def utility(self, sucessorState):
+        return self.evaluationFunction(sucessorState)
+
+    def terminalTest(self, sucessorState, gameState):
+        if self.depth < 0:
+            return True
+        return False
+        # return gameState.getNumFood() <= 0
+        # return self.calculateFoodPalletsLeft(gameState) <= 0
+
+    def maxValue(self, sucessorState, gameState):
+        self.depth -= 1
+        if self.terminalTest(sucessorState, gameState):
+            return self.utility(sucessorState)
+        value = -sys.maxint - 1
+        legalMoves = gameState.getLegalActions(0)
+        states = [gameState.generateSuccessor(0, action) for action in legalMoves]
+        for state in states:
+            value = max(value, self.minValue(state, gameState))
+
+        return value
+
+    def minValue(self, sucessorState, gameState):
+        if self.terminalTest(sucessorState, gameState):
+            return self.utility(sucessorState)
+        value = sys.maxint
+        states = list()
+        for i in range(1, gameState.getNumAgents()):
+            legalMoves = gameState.getLegalActions(i)
+            states += [gameState.generateSuccessor(i, action) for action in legalMoves]
+        for state in states:
+            value = min(value, self.maxValue(state, gameState))
+
+        return value
+
     def getAction(self, gameState):
         """
           Returns the minimax action from the current gameState using self.depth
@@ -245,8 +284,21 @@ class MinimaxAgent(MultiAgentSearchAgent):
           gameState.getNumAgents():
             Returns the total number of agents in the game
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # print 'numAgents = ', gameState.getNumAgents()
+        # print 'legalActions0 = ', gameState.getLegalActions(0)
+        # print 'legalActions1 = ', gameState.getLegalActions(1)
+        # print 'legalActions2 = ', gameState.getLegalActions(2)
+        # print 'legalActions3 = ', gameState.getLegalActions(3)
+        # print 'gameState = ', gameState.generateSuccessor(0, 'West')
+        # print 'self.depth = ', self.depth
+        # print 'getNumFood = ', gameState.getNumFood()
+        # print 'self.evaluationFunction = ', self.evaluationFunction
+        legalMoves = gameState.getLegalActions(0)
+        scores = [self.minValue(gameState.generateSuccessor(0, action), gameState) for action in legalMoves]
+        bestScore = max(scores)
+        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+        return legalMoves[chosenIndex]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
