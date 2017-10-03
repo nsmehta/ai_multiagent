@@ -244,42 +244,46 @@ class MinimaxAgent(MultiAgentSearchAgent):
         # return self.calculateFoodPalletsLeft(gameState) <= 0
 
     def maxValue(self, sucessorState, gameState, depth):
-        self.depth = depth
+        depth -= 1
+        # self.depth = depth
         # self.depth -= 1
         if self.terminalTest(sucessorState, gameState, depth):
             return self.utility(sucessorState)
         # print "self.depth", self.depth
         value = -sys.maxint - 1
-        legalMoves = gameState.getLegalActions(0)
-        states = [gameState.generateSuccessor(0, action) for action in legalMoves]
+        legalMoves = sucessorState.getLegalActions(0)
+        states = [sucessorState.generateSuccessor(0, action) for action in legalMoves]
         for state in states:
             value = max(value, self.minValue(state, gameState, depth, 1))
 
         return value
 
     def minValue(self, sucessorState, gameState, depth, ghostNumber):
-        self.depth = depth
+        # self.depth = depth
         # print "gameState= ", type(gameState)
         # print "depth", depth
-        if self.terminalTest(sucessorState, gameState, depth):
-            # print "in terminal state,", self.utility(sucessorState)
-            return self.utility(sucessorState)
+        # if self.terminalTest(sucessorState, gameState, depth):
+        #     # print "in terminal state,", self.utility(sucessorState)
+        #     return self.utility(sucessorState)
         value = sys.maxint
         states = list()
         # for each ghost
         for i in range(ghostNumber, gameState.getNumAgents()):
-            legalMoves = gameState.getLegalActions(i)
+            legalMoves = sucessorState.getLegalActions(i)
             # print "legalMoves", legalMoves
-            states = [gameState.generateSuccessor(i, action) for action in legalMoves]
+            states = [sucessorState.generateSuccessor(i, action) for action in legalMoves]
             # print "gameState.getNumAgents()", i
+            # print "sucessorState.getNumAgents()", sucessorState.getNumAgents()
+            # print "value=", value
             # if ghost number is not final ghost
-            if(i < gameState.getNumAgents() - 1):
-                # print "i", i
+            if i < (sucessorState.getNumAgents() - 1):
                 for state in states:
                     value = min(value, self.minValue(state, gameState, depth, i + 1))
+                    # value = self.minValue(state, gameState, depth, i + 1)
+                    # print value
             else:
                 for state in states:
-                    value = min(value, self.maxValue(state, gameState, depth - 1))
+                    value = min(value, self.maxValue(state, gameState, depth))
         # for state in states:
         #     value = min(value, self.maxValue(state, gameState, depth - 1))
 
