@@ -228,81 +228,54 @@ class MinimaxAgent(MultiAgentSearchAgent):
       Your minimax agent (question 2)
     """
 
-    def calculateFoodPalletsLeft(self, gameState):
-        return gameState.getNumFood()
-        # return 0
+    def utility(self, successorState):
+        # this function calls the evaluation function
+        return self.evaluationFunction(successorState)
 
-    def utility(self, sucessorState):
-        return self.evaluationFunction(sucessorState)
-
-    def terminalTest(self, sucessorState, gameState, depth):
-        # if self.depth < 0:
-        # if depth <= 0 or sucessorState.isWin() or sucessorState.isLose():
-        if depth <= 0:
+    def terminalTest(self, successorState, gameState, depth):
+        # this function tests if the game has ended or the depth has been reached
+        if depth <= 0 or successorState.isWin() or successorState.isLose():
             return True
         return False
-        # return gameState.getNumFood() <= 0
-        # return self.calculateFoodPalletsLeft(gameState) <= 0
 
-    def maxValue(self, sucessorState, gameState, depth):
-        # depth -= 1
-        # self.depth = depth
-        # self.depth -= 1
-        # if self.terminalTest(sucessorState, gameState, depth):
-        #     return self.utility(sucessorState)
-        # print "self.depth", self.depth
+    def maxValue(self, successorState, gameState, depth):
+        # this function plays Max for the given depth
         value = -sys.maxint - 1
-        legalMoves = sucessorState.getLegalActions(0)
-        if not legalMoves or self.terminalTest(sucessorState, gameState, depth):
-            return self.utility(sucessorState)
-        states = [sucessorState.generateSuccessor(0, action) for action in legalMoves]
+        legalMoves = successorState.getLegalActions(0)
+        if not legalMoves or self.terminalTest(successorState, gameState, depth):
+            return self.utility(successorState)
+        states = [successorState.generateSuccessor(0, action) for action in legalMoves]
+        # let Min play for the given depth
         for state in states:
             value = max(value, self.minValue(state, gameState, depth, 1))
-        # print "valueMax=", value
         return value
 
-    def minValue(self, sucessorState, gameState, depth, ghostNumber):
-        # self.depth = depth
-        # print "gameState= ", type(gameState)
-        # print "depth", depth
-        if self.terminalTest(sucessorState, gameState, depth):
-            # print "in terminal state,", self.utility(sucessorState)
-            return self.utility(sucessorState)
+    def minValue(self, successorState, gameState, depth, ghostNumber):
+        # this function plays Min for the given depth
+        # Check if the terminal state has been reached
+        if self.terminalTest(successorState, gameState, depth):
+            return self.utility(successorState)
         value = sys.maxint
-        states = list()
-        # for each ghost
-        # for i in range(ghostNumber, gameState.getNumAgents()):
-        i = ghostNumber
-        legalMoves = sucessorState.getLegalActions(i)
-        if  not legalMoves or self.terminalTest(sucessorState, gameState, depth):
-            # print "in terminal state,", self.utility(sucessorState)
-            return self.utility(sucessorState)
+        legalMoves = successorState.getLegalActions(ghostNumber)
+        if  not legalMoves or self.terminalTest(successorState, gameState, depth):
+            return self.utility(successorState)
 
-        # if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
-        #     return self.evaluationFunction(sucessorState)
-        # print "legalMoves", legalMoves
-        states = [sucessorState.generateSuccessor(i, action) for action in legalMoves]
-        # print "gameState.getNumAgents()", i
-        # print "sucessorState.getNumAgents()", sucessorState.getNumAgents()
-        # print "value=", value
-        # if ghost number is not final ghost
-        if i < (sucessorState.getNumAgents() - 1):
+        states = [successorState.generateSuccessor(ghostNumber, action) for action in legalMoves]
+        # if ghost number is not final ghost, the next ghost will play as Min
+        if ghostNumber < (successorState.getNumAgents() - 1):
             for state in states:
-                value = min(value, self.minValue(state, gameState, depth, i + 1))
-                # value = self.minValue(state, gameState, depth, i + 1)
-                # print value
+                value = min(value, self.minValue(state, gameState, depth, ghostNumber + 1))
         else:
             depth -= 1
-            # print "states", states
-            if self.terminalTest(sucessorState, gameState, depth):
-                # return self.utility(sucessorState)
+            # Check if the terminal state has been reached
+            if self.terminalTest(successorState, gameState, depth):
+                # if the terminal state has been reached, execute last ghost action and return
                 for state in states:
                     value = min(value, self.utility(state))
             else:
+                # if the terminal state has not been reached, let Max play for next depth
                 for state in states:
                     value = min(value, self.maxValue(state, gameState, depth))
-        # for state in states:
-        #     value = min(value, self.maxValue(state, gameState, depth - 1))
 
         return value
 
@@ -323,24 +296,14 @@ class MinimaxAgent(MultiAgentSearchAgent):
           gameState.getNumAgents():
             Returns the total number of agents in the game
         """
-        # print 'numAgents = ', gameState.getNumAgents()
-        # print 'legalActions0 = ', gameState.getLegalActions(0)
-        # print 'legalActions1 = ', gameState.getLegalActions(1)
-        # print 'legalActions2 = ', gameState.getLegalActions(2)
-        # print 'legalActions3 = ', gameState.getLegalActions(3)
-        # print 'gameState = ', gameState.generateSuccessor(0, 'West')
-        # print "gameState= ", type(gameState)
-        # print 'self.depth = ', self.depth
-        # print 'getNumFood = ', gameState.getNumFood()
-        # print 'self.evaluationFunction = ', self.evaluationFunction
+        
         legalMoves = gameState.getLegalActions(0)
-        # print "legalMoves", legalMoves
-        # self.depth -= 1
+        # calculates the move Max has to play
         scores = [self.minValue(gameState.generateSuccessor(0, action), gameState, self.depth, 1) for action in legalMoves]
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
-        # print legalMoves[chosenIndex]
+
         return legalMoves[chosenIndex]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
