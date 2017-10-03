@@ -28,6 +28,11 @@ class ReflexAgent(Agent):
       headers.
     """
 
+    def manhattanDistance(position1, position2):
+        "Calculates the Manhattan distance between 2 points"
+        xy1 = position1
+        xy2 = position2
+        return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
 
     def getAction(self, gameState):
         """
@@ -41,13 +46,43 @@ class ReflexAgent(Agent):
         # Collect legal moves and successor states
         legalMoves = gameState.getLegalActions()
 
+        closestX = 9999
+        closestY = 9999
+        pointDistance = -1
+        lowestDistance = -1
+
+        # find the food pellet closest to the current Pacman position
+        food = gameState.getFood()
+        for rowIndex in xrange(0, food.width):
+            for colIndex in xrange(0, food.height):
+                if food[rowIndex][colIndex]:
+                    pointDistance = manhattanDistance([rowIndex, colIndex], gameState.getPacmanPosition())
+                    if lowestDistance == -1 or lowestDistance > pointDistance:
+                        lowestDistance = pointDistance
+                        closestX = rowIndex
+                        closestY = colIndex
+
+        self.closestFood = tuple([closestX, closestY])
+
+
+        # find the index at which the "Stop" move is placed
+        stopIndex = -1
+        if("Stop" in legalMoves):
+            stopIndex = legalMoves.index("Stop")
+
         # Choose one of the best actions
         scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+        negativeScores = sum(score < 0 for score in scores)
+        # Give a low score to Stop index unless there is a ghost nearby
+        if scores[stopIndex] > 0 and negativeScores <= (len(scores) - 1):
+            scores[stopIndex] *= -1
+
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
         "Add more of your code here if you want to"
+
 
         return legalMoves[chosenIndex]
 
@@ -67,19 +102,96 @@ class ReflexAgent(Agent):
         to create a masterful evaluation function.
         """
         # Useful information you can extract from a GameState (pacman.py)
-        successorGameState = currentGameState.generatePacmanSuccessor(action)
-        print 'successorGameState = ', successorGameState
-        newPos = successorGameState.getPacmanPosition()
-        print 'newPos = ', newPos
-        newFood = successorGameState.getFood()
-        print 'newFood = ', newFood
-        newGhostStates = successorGameState.getGhostStates()
-        print 'newGhostStates = ', newGhostStates
-        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
-        print 'newScaredTimes = ', newScaredTimes
 
+
+        successorGameState = currentGameState.generatePacmanSuccessor(action)
+        newPos = successorGameState.getPacmanPosition()
+        newFood = successorGameState.getFood()
+        newGhostStates = successorGameState.getGhostStates()
+        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+        # print "newPos=", newPos
+        # print "newScaredTimes="
+        # print newScaredTimes
+        # print "newFood="
+        # print newFood[0]
+        # print "successorGameState.getScore()=", successorGameState.getScore()
+        # print newFood.count()
         "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        # closestX = 9999
+        # closestY = 9999
+        # pointDistance = -1
+        # lowestDistance = -1
+        # print newFood.width
+        # print newFood.height
+
+
+        walls = successorGameState.getWalls()
+        newPosX = newPos[0]
+        newPosY = newPos[1]
+        ghostPositions = []
+        for ghostState in newGhostStates:
+            ghostPositions.append(ghostState.getPosition())
+
+        # calculate the number of walls bordering the new position
+        numWalls = 0
+        if walls[newPosX + 1][newPosY]:
+            numWalls += 1
+        if walls[newPosX - 1][newPosY]:
+            numWalls += 1
+        if walls[newPosX][newPosY + 1]:
+            numWalls += 1
+        if walls[newPosX][newPosY - 1]:
+            numWalls += 1
+
+
+        # for rowIndex in xrange(0, newFood.width):
+        #     for colIndex in xrange(0, newFood.height):
+        #         if newFood[rowIndex][colIndex]:
+        #             pointDistance = manhattanDistance([rowIndex, colIndex], newPos)
+        #             if lowestDistance == -1 or lowestDistance > pointDistance:
+        #                 lowestDistance = pointDistance
+        #                 closestX = rowIndex
+        #                 closestY = colIndex
+
+        # print "lowestDistance=", lowestDistance
+        # print "successorGameState.getScore()=", successorGameState.getScore()
+        # print "point = ", closestX, ", ", closestY
+
+        # return lowestDistance
+
+        # calcuate the manhattan distance till the closest food
+        distance = manhattanDistance(self.closestFood, newPos)
+
+        # calculate the sum of manhattan distances from the new position till each of the ghosts
+        ghostDistance = 0
+        for ghostPosition in ghostPositions:
+            individualGhostDistance = manhattanDistance(ghostPosition, newPos)
+            #if the ghost is at a new position, return a large negative value
+            if(individualGhostDistance == 0):
+                return -50
+            ghostDistance += individualGhostDistance
+
+        # if the new position is at the nearest food pellet, return a large positive value
+        if distance == 0:
+            return 9999
+
+        """
+        calculate the final score by:
+        1. Adding reciprocal of the total distance till the nearest food pellet
+        2. Adding the sum of manhattan distance from the new position till all the ghosts
+        3. Subtracting the number of walls bordering the position
+        """
+        distance = (50 / float(distance)) + (ghostDistance / 50) - numWalls
+
+        if(newPos in ghostPositions):
+            ghostScared = sum(scared > 0 for scared in newScaredTimes)
+            # if new position has a ghost and the ghost is not scared, return large negative value
+            if not ghostScared > 0:
+                distance *= -1
+
+        return distance
+
+        # return successorGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState):
     """
@@ -111,7 +223,6 @@ class MultiAgentSearchAgent(Agent):
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
 
-
 class MinimaxAgent(MultiAgentSearchAgent):
     """
       Your minimax agent (question 2)
@@ -124,35 +235,68 @@ class MinimaxAgent(MultiAgentSearchAgent):
     def utility(self, sucessorState):
         return self.evaluationFunction(sucessorState)
 
-    def terminalTest(self, sucessorState, gameState):
-        if self.depth < 0:
+    def terminalTest(self, sucessorState, gameState, depth):
+        # if self.depth < 0:
+        # if depth <= 0 or sucessorState.isWin() or sucessorState.isLose():
+        if depth <= 0:
             return True
         return False
         # return gameState.getNumFood() <= 0
         # return self.calculateFoodPalletsLeft(gameState) <= 0
 
-    def maxValue(self, sucessorState, gameState):
-        self.depth -= 1
-        if self.terminalTest(sucessorState, gameState):
-            return self.utility(sucessorState)
+    def maxValue(self, sucessorState, gameState, depth):
+        # depth -= 1
+        # self.depth = depth
+        # self.depth -= 1
+        # if self.terminalTest(sucessorState, gameState, depth):
+        #     return self.utility(sucessorState)
+        # print "self.depth", self.depth
         value = -sys.maxint - 1
-        legalMoves = gameState.getLegalActions(0)
-        states = [gameState.generateSuccessor(0, action) for action in legalMoves]
+        legalMoves = sucessorState.getLegalActions(0)
+        if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
+            return self.evaluationFunction(sucessorState)
+        states = [sucessorState.generateSuccessor(0, action) for action in legalMoves]
         for state in states:
-            value = max(value, self.minValue(state, gameState))
-
+            value = max(value, self.minValue(state, gameState, depth, 1))
+        # print "valueMax=", value
         return value
 
-    def minValue(self, sucessorState, gameState):
-        if self.terminalTest(sucessorState, gameState):
-            return self.utility(sucessorState)
+    def minValue(self, sucessorState, gameState, depth, ghostNumber):
+        # self.depth = depth
+        # print "gameState= ", type(gameState)
+        # print "depth", depth
+        # if self.terminalTest(sucessorState, gameState, depth):
+        #     # print "in terminal state,", self.utility(sucessorState)
+        #     return self.utility(sucessorState)
         value = sys.maxint
         states = list()
-        for i in range(1, gameState.getNumAgents()):
-            legalMoves = gameState.getLegalActions(i)
-            states += [gameState.generateSuccessor(i, action) for action in legalMoves]
-        for state in states:
-            value = min(value, self.maxValue(state, gameState))
+        # for each ghost
+        for i in range(ghostNumber, gameState.getNumAgents()):
+            legalMoves = sucessorState.getLegalActions(i)
+            if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
+                return self.evaluationFunction(sucessorState)
+            # print "legalMoves", legalMoves
+            states = [sucessorState.generateSuccessor(i, action) for action in legalMoves]
+            # print "gameState.getNumAgents()", i
+            # print "sucessorState.getNumAgents()", sucessorState.getNumAgents()
+            # print "value=", value
+            # if ghost number is not final ghost
+            if i < (sucessorState.getNumAgents() - 1):
+                for state in states:
+                    value = min(value, self.minValue(state, gameState, depth, i + 1))
+                    # value = self.minValue(state, gameState, depth, i + 1)
+                    # print value
+            else:
+                depth -= 1
+                if self.terminalTest(sucessorState, gameState, depth):
+                    # return self.utility(sucessorState)
+                    for state in states:
+                        value = min(value, self.evaluationFunction(state))
+                else:
+                    for state in states:
+                        value = min(value, self.maxValue(state, gameState, depth))
+        # for state in states:
+        #     value = min(value, self.maxValue(state, gameState, depth - 1))
 
         return value
 
@@ -179,16 +323,19 @@ class MinimaxAgent(MultiAgentSearchAgent):
         # print 'legalActions2 = ', gameState.getLegalActions(2)
         # print 'legalActions3 = ', gameState.getLegalActions(3)
         # print 'gameState = ', gameState.generateSuccessor(0, 'West')
+        # print "gameState= ", type(gameState)
         # print 'self.depth = ', self.depth
         # print 'getNumFood = ', gameState.getNumFood()
         # print 'self.evaluationFunction = ', self.evaluationFunction
         legalMoves = gameState.getLegalActions(0)
-        scores = [self.minValue(gameState.generateSuccessor(0, action), gameState) for action in legalMoves]
+        # print "legalMoves", legalMoves
+        # self.depth -= 1
+        scores = [self.minValue(gameState.generateSuccessor(0, action), gameState, self.depth, 1) for action in legalMoves]
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+        # print legalMoves[chosenIndex]
         return legalMoves[chosenIndex]
-
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
