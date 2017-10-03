@@ -237,25 +237,28 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
     def terminalTest(self, sucessorState, gameState, depth):
         # if self.depth < 0:
-        if depth <= 0 or sucessorState.isWin() or sucessorState.isLose():
+        # if depth <= 0 or sucessorState.isWin() or sucessorState.isLose():
+        if depth <= 0:
             return True
         return False
         # return gameState.getNumFood() <= 0
         # return self.calculateFoodPalletsLeft(gameState) <= 0
 
     def maxValue(self, sucessorState, gameState, depth):
-        depth -= 1
+        # depth -= 1
         # self.depth = depth
         # self.depth -= 1
-        if self.terminalTest(sucessorState, gameState, depth):
-            return self.utility(sucessorState)
+        # if self.terminalTest(sucessorState, gameState, depth):
+        #     return self.utility(sucessorState)
         # print "self.depth", self.depth
         value = -sys.maxint - 1
         legalMoves = sucessorState.getLegalActions(0)
+        if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
+            return self.evaluationFunction(sucessorState)
         states = [sucessorState.generateSuccessor(0, action) for action in legalMoves]
         for state in states:
             value = max(value, self.minValue(state, gameState, depth, 1))
-
+        # print "valueMax=", value
         return value
 
     def minValue(self, sucessorState, gameState, depth, ghostNumber):
@@ -270,6 +273,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
         # for each ghost
         for i in range(ghostNumber, gameState.getNumAgents()):
             legalMoves = sucessorState.getLegalActions(i)
+            if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
+                return self.evaluationFunction(sucessorState)
             # print "legalMoves", legalMoves
             states = [sucessorState.generateSuccessor(i, action) for action in legalMoves]
             # print "gameState.getNumAgents()", i
@@ -282,8 +287,14 @@ class MinimaxAgent(MultiAgentSearchAgent):
                     # value = self.minValue(state, gameState, depth, i + 1)
                     # print value
             else:
-                for state in states:
-                    value = min(value, self.maxValue(state, gameState, depth))
+                depth -= 1
+                if self.terminalTest(sucessorState, gameState, depth):
+                    # return self.utility(sucessorState)
+                    for state in states:
+                        value = min(value, self.evaluationFunction(state))
+                else:
+                    for state in states:
+                        value = min(value, self.maxValue(state, gameState, depth))
         # for state in states:
         #     value = min(value, self.maxValue(state, gameState, depth - 1))
 
