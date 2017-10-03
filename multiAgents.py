@@ -311,12 +311,78 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
       Your minimax agent with alpha-beta pruning (question 3)
     """
 
+    def utility(self, successorState):
+        # this function calls the evaluation function
+        return self.evaluationFunction(successorState)
+
+    def terminalTest(self, successorState, gameState, depth):
+        # this function tests if the game has ended or the depth has been reached
+        if depth <= 0 or successorState.isWin() or successorState.isLose():
+            return True
+        return False
+
+    def maxValue(self, successorState, gameState, depth, alpha, beta):
+        # this function plays Max for the given depth
+        value = -sys.maxint - 1
+        legalMoves = successorState.getLegalActions(0)
+        if not legalMoves or self.terminalTest(successorState, gameState, depth):
+            return self.utility(successorState)
+        states = [successorState.generateSuccessor(0, action) for action in legalMoves]
+        # let Min play for the given depth
+        for state in states:
+            value = max(value, self.minValue(state, gameState, depth, 1, alpha, beta))
+            if value >= beta:
+                return value
+            alpha = max(alpha, value)
+        return value
+
+    def minValue(self, successorState, gameState, depth, ghostNumber, alpha, beta):
+        # this function plays Min for the given depth
+        # Check if the terminal state has been reached
+        if self.terminalTest(successorState, gameState, depth):
+            return self.utility(successorState)
+        value = sys.maxint
+        legalMoves = successorState.getLegalActions(ghostNumber)
+        if  not legalMoves or self.terminalTest(successorState, gameState, depth):
+            return self.utility(successorState)
+
+        states = [successorState.generateSuccessor(ghostNumber, action) for action in legalMoves]
+        # if ghost number is not final ghost, the next ghost will play as Min
+        if ghostNumber < (successorState.getNumAgents() - 1):
+            for state in states:
+                value = min(value, self.minValue(state, gameState, depth, ghostNumber + 1, alpha, beta))
+        else:
+            depth -= 1
+            # Check if the terminal state has been reached
+            if self.terminalTest(successorState, gameState, depth):
+                # if the terminal state has been reached, execute last ghost action and return
+                for state in states:
+                    value = min(value, self.utility(state))
+            else:
+                # if the terminal state has not been reached, let Max play for next depth
+                for state in states:
+                    value = min(value, self.maxValue(state, gameState, depth, alpha, beta))
+                    if value <= alpha:
+                        return value
+                    beta = min(beta, value)
+
+        return value
+
     def getAction(self, gameState):
         """
           Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # scores = list()
+        # scores.append(self.maxValue(gameState, gameState, self.depth, -sys.maxint - 1, sys.maxint))
+
+        legalMoves = gameState.getLegalActions(0)
+        # calculates the move Max has to play
+        scores = [self.maxValue(gameState.generateSuccessor(0, action), gameState, self.depth, -sys.maxint - 1, sys.maxint) for action in legalMoves]
+        bestScore = max(scores)
+        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+
+        return legalMoves[chosenIndex]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
