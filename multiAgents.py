@@ -253,8 +253,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
         # print "self.depth", self.depth
         value = -sys.maxint - 1
         legalMoves = sucessorState.getLegalActions(0)
-        if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
-            return self.evaluationFunction(sucessorState)
+        if not legalMoves or self.terminalTest(sucessorState, gameState, depth):
+            return self.utility(sucessorState)
         states = [sucessorState.generateSuccessor(0, action) for action in legalMoves]
         for state in states:
             value = max(value, self.minValue(state, gameState, depth, 1))
@@ -265,36 +265,42 @@ class MinimaxAgent(MultiAgentSearchAgent):
         # self.depth = depth
         # print "gameState= ", type(gameState)
         # print "depth", depth
-        # if self.terminalTest(sucessorState, gameState, depth):
-        #     # print "in terminal state,", self.utility(sucessorState)
-        #     return self.utility(sucessorState)
+        if self.terminalTest(sucessorState, gameState, depth):
+            # print "in terminal state,", self.utility(sucessorState)
+            return self.utility(sucessorState)
         value = sys.maxint
         states = list()
         # for each ghost
-        for i in range(ghostNumber, gameState.getNumAgents()):
-            legalMoves = sucessorState.getLegalActions(i)
-            if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
-                return self.evaluationFunction(sucessorState)
-            # print "legalMoves", legalMoves
-            states = [sucessorState.generateSuccessor(i, action) for action in legalMoves]
-            # print "gameState.getNumAgents()", i
-            # print "sucessorState.getNumAgents()", sucessorState.getNumAgents()
-            # print "value=", value
-            # if ghost number is not final ghost
-            if i < (sucessorState.getNumAgents() - 1):
+        # for i in range(ghostNumber, gameState.getNumAgents()):
+        i = ghostNumber
+        legalMoves = sucessorState.getLegalActions(i)
+        if  not legalMoves or self.terminalTest(sucessorState, gameState, depth):
+            # print "in terminal state,", self.utility(sucessorState)
+            return self.utility(sucessorState)
+
+        # if not legalMoves or sucessorState.isWin() or sucessorState.isLose():
+        #     return self.evaluationFunction(sucessorState)
+        # print "legalMoves", legalMoves
+        states = [sucessorState.generateSuccessor(i, action) for action in legalMoves]
+        # print "gameState.getNumAgents()", i
+        # print "sucessorState.getNumAgents()", sucessorState.getNumAgents()
+        # print "value=", value
+        # if ghost number is not final ghost
+        if i < (sucessorState.getNumAgents() - 1):
+            for state in states:
+                value = min(value, self.minValue(state, gameState, depth, i + 1))
+                # value = self.minValue(state, gameState, depth, i + 1)
+                # print value
+        else:
+            depth -= 1
+            # print "states", states
+            if self.terminalTest(sucessorState, gameState, depth):
+                # return self.utility(sucessorState)
                 for state in states:
-                    value = min(value, self.minValue(state, gameState, depth, i + 1))
-                    # value = self.minValue(state, gameState, depth, i + 1)
-                    # print value
+                    value = min(value, self.utility(state))
             else:
-                depth -= 1
-                if self.terminalTest(sucessorState, gameState, depth):
-                    # return self.utility(sucessorState)
-                    for state in states:
-                        value = min(value, self.evaluationFunction(state))
-                else:
-                    for state in states:
-                        value = min(value, self.maxValue(state, gameState, depth))
+                for state in states:
+                    value = min(value, self.maxValue(state, gameState, depth))
         # for state in states:
         #     value = min(value, self.maxValue(state, gameState, depth - 1))
 
