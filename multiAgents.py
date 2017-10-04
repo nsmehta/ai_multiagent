@@ -331,9 +331,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         # let Min play for the given depth
         # for state in states:
         for i in range(0, len(legalMoves)):
-            state = self.getNextState(successorState, legalMoves, i)
+            state = self.getNextState(successorState, legalMoves, i, 0)
             value = max(value, self.minValue(state, gameState, depth, 1, alpha, beta))
-            if value >= beta:
+            if value > beta:
                 return value
             alpha = max(alpha, value)
         return value
@@ -353,7 +353,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         if ghostNumber < (successorState.getNumAgents() - 1):
             # for state in states:
             for i in range(0, len(legalMoves)):
-                state = self.getNextState(successorState, legalMoves, i)
+                state = self.getNextState(successorState, legalMoves, i, ghostNumber)
                 value = min(value, self.minValue(state, gameState, depth, ghostNumber + 1, alpha, beta))
         else:
             depth -= 1
@@ -362,15 +362,15 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 # if the terminal state has been reached, execute last ghost action and return
                 # for state in states:
                 for i in range(0, len(legalMoves)):
-                    state = self.getNextState(successorState, legalMoves, i)
+                    state = self.getNextState(successorState, legalMoves, i, ghostNumber)
                     value = min(value, self.utility(state))
             else:
                 # if the terminal state has not been reached, let Max play for next depth
                 # for state in states:
                 for i in range(0, len(legalMoves)):
-                    state = self.getNextState(successorState, legalMoves, i)
+                    state = self.getNextState(successorState, legalMoves, i, ghostNumber)
                     value = min(value, self.maxValue(state, gameState, depth, alpha, beta))
-                    if value <= alpha:
+                    if value < alpha:
                         return value
                     beta = min(beta, value)
 
@@ -392,8 +392,8 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         return legalMoves[chosenIndex]
 
-    def getNextState(self, successorState, legalMoves, i):
-        return successorState.generateSuccessor(0, legalMoves[i])
+    def getNextState(self, successorState, legalMoves, i, agentNumber):
+        return successorState.generateSuccessor(agentNumber, legalMoves[i])
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
