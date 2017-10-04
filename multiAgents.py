@@ -355,6 +355,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             for i in range(0, len(legalMoves)):
                 state = self.getNextState(successorState, legalMoves, i, ghostNumber)
                 value = min(value, self.minValue(state, gameState, depth, ghostNumber + 1, alpha, beta))
+                if value < alpha:
+                    return value
+                beta = min(beta, value)
         else:
             depth -= 1
             # Check if the terminal state has been reached
@@ -383,12 +386,35 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         # scores = list()
         # scores.append(self.maxValue(gameState, gameState, self.depth, -sys.maxint - 1, sys.maxint))
 
+
+        alpha = -sys.maxint - 1
+        value = -sys.maxint - 1
+        beta = sys.maxint
+        depth = self.depth
+        scores = []
         legalMoves = gameState.getLegalActions(0)
-        # calculates the move Max has to play
-        scores = [self.minValue(gameState.generateSuccessor(0, action), gameState, self.depth, 1, -sys.maxint - 1, sys.maxint) for action in legalMoves]
+        for i in range(0, len(legalMoves)):
+            # print "alpha = ", alpha
+            # print "beta = ", beta
+            state = self.getNextState(gameState, legalMoves, i, 0)
+            score = self.minValue(state, gameState, depth, 1, alpha, beta)
+            value = max(value, score)
+            scores.append(score)
+            if value > beta:
+                break
+            alpha = max(alpha, value)
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
+        # print "score = ", scores
+
+
+        # legalMoves = gameState.getLegalActions(0)
+        # # calculates the move Max has to play
+        # scores = [self.minValue(gameState.generateSuccessor(0, action), gameState, self.depth, 1, -sys.maxint - 1, sys.maxint) for action in legalMoves]
+        # bestScore = max(scores)
+        # bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        # chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
 
         return legalMoves[chosenIndex]
 
