@@ -367,6 +367,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                 for i in range(0, len(legalMoves)):
                     state = self.getNextState(successorState, legalMoves, i, ghostNumber)
                     value = min(value, self.utility(state))
+                    if value < alpha:
+                        return value
+                    beta = min(beta, value)
             else:
                 # if the terminal state has not been reached, let Max play for next depth
                 # for state in states:
