@@ -327,9 +327,11 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         legalMoves = successorState.getLegalActions(0)
         if not legalMoves or self.terminalTest(successorState, gameState, depth):
             return self.utility(successorState)
-        states = [successorState.generateSuccessor(0, action) for action in legalMoves]
+        # states = [successorState.generateSuccessor(0, action) for action in legalMoves]
         # let Min play for the given depth
-        for state in states:
+        # for state in states:
+        for i in range(0, len(legalMoves)):
+            state = self.getNextState(successorState, legalMoves, i)
             value = max(value, self.minValue(state, gameState, depth, 1, alpha, beta))
             if value >= beta:
                 return value
@@ -343,24 +345,30 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             return self.utility(successorState)
         value = sys.maxint
         legalMoves = successorState.getLegalActions(ghostNumber)
-        if  not legalMoves or self.terminalTest(successorState, gameState, depth):
+        if not legalMoves or self.terminalTest(successorState, gameState, depth):
             return self.utility(successorState)
 
-        states = [successorState.generateSuccessor(ghostNumber, action) for action in legalMoves]
+        # states = [successorState.generateSuccessor(ghostNumber, action) for action in legalMoves]
         # if ghost number is not final ghost, the next ghost will play as Min
         if ghostNumber < (successorState.getNumAgents() - 1):
-            for state in states:
+            # for state in states:
+            for i in range(0, len(legalMoves)):
+                state = self.getNextState(successorState, legalMoves, i)
                 value = min(value, self.minValue(state, gameState, depth, ghostNumber + 1, alpha, beta))
         else:
             depth -= 1
             # Check if the terminal state has been reached
             if self.terminalTest(successorState, gameState, depth):
                 # if the terminal state has been reached, execute last ghost action and return
-                for state in states:
+                # for state in states:
+                for i in range(0, len(legalMoves)):
+                    state = self.getNextState(successorState, legalMoves, i)
                     value = min(value, self.utility(state))
             else:
                 # if the terminal state has not been reached, let Max play for next depth
-                for state in states:
+                # for state in states:
+                for i in range(0, len(legalMoves)):
+                    state = self.getNextState(successorState, legalMoves, i)
                     value = min(value, self.maxValue(state, gameState, depth, alpha, beta))
                     if value <= alpha:
                         return value
@@ -377,12 +385,16 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         legalMoves = gameState.getLegalActions(0)
         # calculates the move Max has to play
-        scores = [self.maxValue(gameState.generateSuccessor(0, action), gameState, self.depth, -sys.maxint - 1, sys.maxint) for action in legalMoves]
+        scores = [self.minValue(gameState.generateSuccessor(0, action), gameState, self.depth, 1, -sys.maxint - 1, sys.maxint) for action in legalMoves]
         bestScore = max(scores)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
 
         return legalMoves[chosenIndex]
+
+    def getNextState(self, successorState, legalMoves, i):
+        return successorState.generateSuccessor(0, legalMoves[i])
+
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
